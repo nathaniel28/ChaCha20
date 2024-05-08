@@ -5,8 +5,6 @@
 #include <string.h>
 #include <unistd.h>
 
-#include <immintrin.h>
-
 #define ROTL32(a, b) (((a) << (b)) | ((a) >> (32 - (b))))
 #define QR(a, b, c, d) \
 	a += b; d ^= a; d = ROTL32(d, 16); \
@@ -46,8 +44,6 @@ static inline __attribute__((always_inline)) void chacha20_inner_block(uint32_t 
 	QR(state[3], state[4], state[9], state[14]);
 }
 
-typedef uint32_t v16i32 __attribute__((vector_size(512)));
-
 static inline __attribute__((always_inline)) void chacha20_block(uint32_t *state) {
 	uint32_t working_state[16];
 	for (int i = 0; i < 16; i++) {
@@ -56,15 +52,9 @@ static inline __attribute__((always_inline)) void chacha20_block(uint32_t *state
 	for (int i = 0; i < 10; i++) {
 		chacha20_inner_block(working_state);
 	}
-	__m512i vstate = _mm512_loadu_epi32(state);
-	__m512i vworking_state = _mm512_loadu_epi32(working_state);
-	vstate = _mm512_add_epi32(vstate, vworking_state);
-	_mm512_storeu_epi32(state, vstate);
-	/*
 	for (int i = 0; i < 16; i++) {
 		state[i] += working_state[i];
 	}
-	*/
 }
 
 uint32_t chacha20_encrypt(const uint32_t *key, const uint32_t counter, const uint32_t *nonce, void *_plaintext, void *_store, size_t cnt) {
